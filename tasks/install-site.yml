@@ -8,15 +8,23 @@
   changed_when: false
   become: no
 
-# See: https://www.drupal.org/node/2569365#comment-11680807
-- name: Configure database correctly if using PostgreSQL.
-  command: psql -c "ALTER DATABASE {{ drupal_db_name }} SET bytea_output = 'escape';"
+- name: Create PostgreSQL password file
+  copy:
+    content: "{{ drupal_db_host }}:5432:{{ drupal_db_name }}:{{ drupal_db_user }}:{{ drupal_db_password }}"
+    dest: "{{ pgpassfile }}"
+    mode: "0600"
   when: "('Drupal bootstrap' not in drupal_site_installed.stdout) and (drupal_db_backend == 'pgsql')"
-  become: yes
-  become_user: "{{ postgresql_user }}"
-  # See: https://github.com/ansible/ansible/issues/16048#issuecomment-229012509
   vars:
     ansible_ssh_pipelining: true
+
+# See: https://www.drupal.org/node/2569365#comment-11680807
+- name: Configure database correctly if using PostgreSQL.
+  command: psql -w -h {{ drupal_db_host }} -U {{ drupal_db_user }} -d {{ drupal_db_name }} -c "ALTER DATABASE {{ drupal_db_name }} SET bytea_output = 'escape';"
+  when: "('Drupal bootstrap' not in drupal_site_installed.stdout) and (drupal_db_backend == 'pgsql')"
+  vars:
+    ansible_ssh_pipelining: true
+  environment:
+    PGPASSFILE: "{{ pgpassfile }}"
 
 - name: Install Drupal with drush.
   command: >

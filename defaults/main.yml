@@ -49,3 +49,5 @@ drupal_install_profile: standard
 drupal_enable_modules: []
 drupal_account_name: admin
 drupal_account_pass: admin
+
+pgpassfile: "{{ ansible_env.HOME }}/.pgpass"
